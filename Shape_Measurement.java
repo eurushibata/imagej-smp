@@ -24,12 +24,9 @@ public class Shape_Measurement implements PlugInFilter {
         
         gd.addMessage("Diametro efetivo(de Heywood) = " + diameter() + "\n" +
         			  "Circularidade = " + formFactor() + "\n" +
-        			  "Arredondamento = " + roundness() + "\n");
-        // gd.addMessage("Diametro efetivo = " + vet[0] + "\n"
-        //              + "Circularidade = " + vet[1] + " \n"
-        //              + "Arredondamento = " + vet[2] + "\n"
-        //              + "Razão de raio = " + vet[3] + " \n"
-        //              + "Compactação = " + vet[4] + " \n");
+        			  "Arredondamento = " + roundness() + "\n" +
+        			  "Compactacao = " + compactness() + "\n" +
+        			  "Razao de Raio = " + aspectRatio() + "@@" + breadth());
         gd.showDialog();
 
 	}
@@ -120,8 +117,73 @@ public class Shape_Measurement implements PlugInFilter {
         return length;
 	}
 
+	// // Breadth (Menor Eixo)
+	// Breadth (or width) is defined as the longest cord perpendicular to the angle Q given by the moments axis to the x-axis.
+	public double breadth() {
+		double breadth = 1.0;
+        double temp, lengthCoef, breadthCoef;
+        int x1, y1, x2, y2;
+        int perimeter = (int)perimeter();
+        double [][] lengthCoord = new double[2][2];
+        
+        try {
+        	ImageProcessor output = img.getProcessor();
+        	int[][] pixelPerimeter = new int[2][perimeter];
+            int k = 0;
+            
+            for (int x = 0; x < output.getWidth(); x++)
+				for (int y = 0; y < output.getHeight(); y++) {
+                    if(output.getPixel(x, y) != 0 && ((x-1) > 0) && ((y-1) > 0) && ((output.getPixel(x+1, y)==0) || (output.getPixel(x-1, y)==0) || (output.getPixel(x, y+1)==0) || (output.getPixel(x, y-1)==0))) {
+						pixelPerimeter[0][k] = x;
+						pixelPerimeter[1][k] = y;
+						k++;
+                    }
+                }
+            
+            double length = 0.0;
+            for(int i = 0; i < perimeter; i++)
+                for(int j = i+1; j < perimeter; j++) {
+                    x1 = pixelPerimeter[0][i];
+                    y1 = pixelPerimeter[1][i];
+                    x2 = pixelPerimeter[0][j];
+                    y2 = pixelPerimeter[1][j];
+                    temp = euclidianDistance(x1,x2,y1,y2);
+                    if(temp > length) {
+                        length = temp;
+                        lengthCoord[0][0] = x1;
+                        lengthCoord[1][0] = y1;
+                        lengthCoord[0][1] = x2;
+                        lengthCoord[1][1] = y2;
+                    }
+                }
+   
+            if ((lengthCoord[0][1]-lengthCoord[0][0])!= 0) {
+                lengthCoef = ((lengthCoord[1][1]-lengthCoord[1][0])/(lengthCoord[0][1]-lengthCoord[0][0]));
+           
+                for (int i = 0; i < perimeter-1; i++)
+                    for(int j = i+1; j < perimeter; j++) {
+                        x1 = pixelPerimeter[0][i];
+                        y1 = pixelPerimeter[1][i];
+                        x2 = pixelPerimeter[0][j];
+                        y2 = pixelPerimeter[1][j];
 
-
+                        if((x2-x1) != 0) {
+                            breadthCoef = (y2-y1)/(x2-x1);
+                            if(lengthCoef * breadthCoef >= -0.90 && lengthCoef * breadthCoef <= -1.10) {
+                                temp = euclidianDistance(x1,x2,y1,y2);
+                                if(temp > breadth)
+                                    breadth = temp;
+                            }
+                        }
+                    }
+            }
+        }
+        catch(Exception e){
+            String err = "Erro no cálculo do menor eixo da imagem \n" + e.toString();
+            IJ.log(err);
+        }
+        return breadth;
+	}
 
 	// Diameter (Diâmetro Efetivo)
 	// The diameter (or Heywood diameter) is expressed as the diameter of a circle having an area equivalent to the shape's area.
@@ -166,12 +228,32 @@ public class Shape_Measurement implements PlugInFilter {
         return roundness;
     }
 
+	// Compactness (Compactação)
+	// Compactness is a measure expressing how compact a feature is. A circle will have a compactness of 1.0, a squares compactness is 1.1284, whereas elongated and irregular shapes results in values less than 1.0.
+	public double compactness() {
+        double compactness = 0.0;
+        try {
+            compactness = diameter()/length();
+        }
+        catch(Exception e){
+            String err = "Erro no cálculo da compactação da imagem \n" + e.toString();
+            IJ.log(err);
+        }
+        return compactness;
+    }
 
-
-	// // Breadth
-	// // Breadth (or width) is defined as the longest cord perpendicular to the angle Q given by the moments axis to the x-axis.
-	// public double breadth() {
-
-	// }
+	// Aspect Ratio (Razão de Raio)
+	// Aspect Ratio is the aspect ration defined as Length over Breadth. The aspect ration will from this definition always be greater than or equal to 1.0. The aspect ratio of both a circle and square is 1.0, whereas other shapes will have a value less than 1.0.
+	public double aspectRatio() {
+        double aspectRatio = 0.0;
+        try {
+            aspectRatio = (double)length()/(double)breadth();
+        }
+        catch(Exception e){
+            String err = "Erro no cálculo da razão de raio da imagem \n" + e.toString();
+            IJ.log(err);
+        }
+        return aspectRatio;
+    }
 
 }
