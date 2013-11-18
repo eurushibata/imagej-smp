@@ -1,3 +1,6 @@
+// Referência usado
+// http://www.imagemet.com/WebHelp6/Content/PnPParameters/Measure_Shape_Parameters.htm
+
 import java.io.*;
 import ij.*;
 import ij.process.*;
@@ -20,13 +23,13 @@ public class Shape_Measurement implements PlugInFilter {
 	@Override
 	public void run(ImageProcessor arg) {
 
-		GenericDialog gd = new GenericDialog("Vetor de características", IJ.getInstance());
+		GenericDialog gd = new GenericDialog("Vetor de caracteristicas", IJ.getInstance());
         
-        gd.addMessage("Diametro efetivo(de Heywood) = " + diameter() + "\n" +
+        gd.addMessage("Diametro efetivo(Heywood) = " + diameter() + "\n" +
         			  "Circularidade = " + formFactor() + "\n" +
         			  "Arredondamento = " + roundness() + "\n" +
         			  "Compactacao = " + compactness() + "\n" +
-        			  "Razao de Raio = " + aspectRatio() + "@@" + breadth());
+        			  "Razao de Raio = " + aspectRatio());
         gd.showDialog();
 
 	}
@@ -105,7 +108,7 @@ public class Shape_Measurement implements PlugInFilter {
                     y1 = pixelPerimeter[1][i];
                     x2 = pixelPerimeter[0][j];
                     y2 = pixelPerimeter[1][j];    
-                    temp = euclidianDistance(x1,x2,y1,y2);
+                    temp = euclidianDistance(x1,y1,x2,y2);
                     if(temp > length)
                         length = temp;
                 }
@@ -120,8 +123,8 @@ public class Shape_Measurement implements PlugInFilter {
 	// // Breadth (Menor Eixo)
 	// Breadth (or width) is defined as the longest cord perpendicular to the angle Q given by the moments axis to the x-axis.
 	public double breadth() {
-		double breadth = 1.0;
-        double temp, lengthCoef, breadthCoef;
+		double breadth = 0.0;
+        double temp, lengthCoef = 0.0, breadthCoef = 0.0;
         int x1, y1, x2, y2;
         int perimeter = (int)perimeter();
         double [][] lengthCoord = new double[2][2];
@@ -147,36 +150,40 @@ public class Shape_Measurement implements PlugInFilter {
                     y1 = pixelPerimeter[1][i];
                     x2 = pixelPerimeter[0][j];
                     y2 = pixelPerimeter[1][j];
-                    temp = euclidianDistance(x1,x2,y1,y2);
+                    temp = euclidianDistance(x1,y1,x2,y2);
                     if(temp > length) {
                         length = temp;
                         lengthCoord[0][0] = x1;
                         lengthCoord[1][0] = y1;
                         lengthCoord[0][1] = x2;
                         lengthCoord[1][1] = y2;
+                        
+                        if (x2-x1 == 0)
+                        	lengthCoef = 0;
+                        else
+                        	lengthCoef = (double)(y2-y1)/(x2-x1);
                     }
                 }
-   
-            if ((lengthCoord[0][1]-lengthCoord[0][0])!= 0) {
-                lengthCoef = ((lengthCoord[1][1]-lengthCoord[1][0])/(lengthCoord[0][1]-lengthCoord[0][0]));
-           
-                for (int i = 0; i < perimeter-1; i++)
-                    for(int j = i+1; j < perimeter; j++) {
-                        x1 = pixelPerimeter[0][i];
-                        y1 = pixelPerimeter[1][i];
-                        x2 = pixelPerimeter[0][j];
-                        y2 = pixelPerimeter[1][j];
+            for(int i = 0; i < perimeter; i++)
+                for(int j = i+1; j < perimeter; j++) {
+                    x1 = pixelPerimeter[0][i];
+                    y1 = pixelPerimeter[1][i];
+                    x2 = pixelPerimeter[0][j];
+                    y2 = pixelPerimeter[1][j];
 
-                        if((x2-x1) != 0) {
-                            breadthCoef = (y2-y1)/(x2-x1);
-                            if(lengthCoef * breadthCoef >= -0.90 && lengthCoef * breadthCoef <= -1.10) {
-                                temp = euclidianDistance(x1,x2,y1,y2);
-                                if(temp > breadth)
-                                    breadth = temp;
-                            }
-                        }
+                    if((x2-x1) == 0)
+                    	breadthCoef = 0;
+                    else
+                    	breadthCoef = (double)(y2-y1)/(x2-x1);
+
+            		double parallel = (double)(lengthCoef * breadthCoef);
+                    if((parallel >= -1.00) && (parallel <= -0.90)) {
+                        temp = euclidianDistance(x1,y1,x2,y2);
+                        if(temp > breadth)
+                            breadth = temp;
                     }
-            }
+                }
+        // }
         }
         catch(Exception e){
             String err = "Erro no cálculo do menor eixo da imagem \n" + e.toString();
