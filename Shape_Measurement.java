@@ -61,9 +61,9 @@ public class Shape_Measurement implements PlugInFilter {
         try {
             ImageProcessor output = img.getProcessor();
 
-            for(int x = 0; x < output.getWidth(); x++)
+            for(int x = 2; x < output.getWidth(); x++)
             	for(int y = 0; y < output.getHeight(); y++) {
-                	if(output.getPixel(x, y) != 0 && ((x-1) > 0) && ((y-1) > 0) && ((output.getPixel(x+1, y)== 0) || (output.getPixel(x-1, y)== 0) || (output.getPixel(x, y+1)== 0) || (output.getPixel(x, y-1)== 0)))
+                	if(output.getPixel(x, y) != 0 && ((x-1) > 0) && ((y-1) > 0) && (((output.getPixel(x+1, y) == 0) || (output.getPixel(x-1, y) == 0) || (output.getPixel(x, y+1) == 0) || (output.getPixel(x, y-1) == 0))))
                 		perimeter++;
                 }
         }
@@ -197,12 +197,13 @@ public class Shape_Measurement implements PlugInFilter {
 	public double diameter() {
 		double diameter = 0.0;
         try {
-            diameter = Math.sqrt(4*(double)area()/Math.PI);
+            diameter = 2 * Math.sqrt((double)area()/Math.PI);
         }
         catch(Exception e){
             String err = "Erro no cálculo do diâmetro efetivo da imagem \n" + e.toString();
             IJ.log(err);
         }
+
         return diameter;
 	}
 
@@ -226,7 +227,7 @@ public class Shape_Measurement implements PlugInFilter {
         double roundness = 0.0;
         
         try {
-            roundness = (4 * area())/(Math.PI * Math.sqrt(length()));
+            roundness = ((4 * (double)area())/(Math.PI * Math.pow(length(), 2)));
         }
         catch(Exception e){
             String err = "Erro no cálculo do arredondamento da imagem \n" + e.toString();
